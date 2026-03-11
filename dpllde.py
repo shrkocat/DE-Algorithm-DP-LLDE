@@ -42,7 +42,7 @@ class DPLLDE:
         bounds: np.ndarray,
         NP: int = 100,
         NL: int = 4,
-        mu_CR_ini: float = 0.5,       # Paper default: 0.5 (differs from LBLDE's 0.35)
+        mu_CR_ini: float = 0.35,       
         mu_F: float = 0.5,
         c: float = 0.1,
         diversity_threshold_ratio: float = 0.1,  # threshold = ratio × D^(0)
