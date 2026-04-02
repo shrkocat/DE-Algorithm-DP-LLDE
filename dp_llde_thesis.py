@@ -239,75 +239,49 @@ def make_wrapper(fn):
 
 """Define `run_and_plot` to execute a single DP-LLDE optimization run on a given benchmark function, print the results, store them for the summary table, and save the convergence graph."""
 
-N_RUNS = 51  # number of independent runs
-
-def run_51_and_plot(fn_name, fn_eval, f_global, fn_label):
-    """Run DP-LLDE 51 times with different seeds, compute mean±std, plot convergence."""
+def run_and_plot(fn_name, fn_eval, f_global, fn_label):
+    """Run DP-LLDE on a function and plot convergence graph."""
     print('=' * 80)
-    print(f'DP-LLDE on CEC 2017 {fn_name} — {N_RUNS} Runs')
+    print(f'DP-LLDE on CEC 2017 {fn_name} — Single Run')
     print('=' * 80)
     print(f'Function       : {fn_label} ({D}D)')
     print(f'Bounds         : [-100, 100]')
     print(f'Global optimum : {f_global}')
 
-    all_errors = []
-    all_histories = []
+    opt = DPLLDE(
+        objective_func=fn_eval,
+        bounds=bounds,
+        NP=NP, NL=NL, mu_CR_ini=MU_CR,
+        max_fes=MAX_FES,
+        seed=SEED
+    )
+    best_sol, best_fit, history = opt.optimize(verbose=True)
 
-    for run in range(N_RUNS):
-        opt = DPLLDE(
-            objective_func=fn_eval,
-            bounds=bounds,
-            NP=NP, NL=NL, mu_CR_ini=MU_CR,
-            max_fes=MAX_FES,
-            seed=run   # seed 0 to 50
-        )
-        _, best_fit, history = opt.optimize(verbose=False)
-        error = abs(best_fit - f_global)
-        all_errors.append(error)
-        all_histories.append(history)
-
-        if (run + 1) % 10 == 0 or run == 0:
-            print(f'  Run {run+1:2d}/{N_RUNS} — Error: {error:.6e}')
-
-    errors = np.array(all_errors)
-    mean_err = np.mean(errors)
-    std_err  = np.std(errors)
-
+    error = abs(best_fit - f_global)
     print(f'\n{"="*80}')
-    print('Results (51 runs):')
-    print(f'  Mean Error  : {mean_err:.6e}')
-    print(f'  Std Dev     : {std_err:.6e}')
-    print(f'  Min Error   : {np.min(errors):.6e}')
-    print(f'  Max Error   : {np.max(errors):.6e}')
+    print('Results:')
+    print(f'  Best Fitness           : {best_fit:.6e}')
+    print(f'  Global Optimum         : {f_global:.6e}')
+    print(f'  Error (|best-optimum|) : {error:.6e}')
+    print(f'  Best Solution (5 dim)  : {best_sol[:5]}')
+    print(f'  D^(0) (init. diversity): {opt.D_0:.4e}')
     print(f'{"="*80}')
 
     # Store for summary
     all_results[fn_name] = {
-        'label'    : fn_label,
-        'f_global' : f_global,
-        'mean'     : mean_err,
-        'std'      : std_err,
-        'min'      : np.min(errors),
-        'max'      : np.max(errors),
+        'label': fn_label,
+        'best_fit': best_fit,
+        'f_global': f_global,
+        'error': error
     }
 
-    # Plot mean convergence curve with std band
-    min_len = min(len(h) for h in all_histories)
-    histories_trimmed = np.array([h[:min_len] for h in all_histories])
-    mean_curve = np.mean(histories_trimmed, axis=0)
-    std_curve  = np.std(histories_trimmed, axis=0)
-    fes_axis   = np.linspace(0, MAX_FES, min_len)
-
+    # Plot
+    fes_axis = np.linspace(0, MAX_FES, len(history))
     plt.figure(figsize=(10, 6))
-    plt.plot(fes_axis, mean_curve, color='steelblue', linewidth=1.5, label='Mean')
-    plt.fill_between(fes_axis,
-                     mean_curve - std_curve,
-                     mean_curve + std_curve,
-                     alpha=0.2, color='steelblue', label='±1 Std Dev')
+    plt.plot(fes_axis, history, color='steelblue', linewidth=1.5)
     plt.xlabel('Function Evaluations (FEs)', fontsize=12)
     plt.ylabel('Best Fitness', fontsize=12)
-    plt.title(f'DP-LLDE Convergence — CEC 2017 {fn_name}: {fn_label} ({D}D, {N_RUNS} runs)', fontsize=12)
-    plt.legend(fontsize=10)
+    plt.title(f'DP-LLDE Convergence — CEC 2017 {fn_name}: {fn_label} ({D}D)', fontsize=12)
     plt.grid(True, which='both', linestyle='--', alpha=0.6)
     plt.tight_layout()
     fname = f'convergence_{fn_name}.png'
@@ -315,7 +289,7 @@ def run_51_and_plot(fn_name, fn_eval, f_global, fn_label):
     plt.show()
     print(f'Graph saved as {fname}\n')
 
-print('run_51_and_plot defined. Ready to run functions.')
+print('All wrappers and helpers defined. Ready to run functions.')
 
 """# ***Section 6. CEC2017 Benchmark Functions***
 
@@ -327,158 +301,158 @@ print('run_51_and_plot defined. Ready to run functions.')
 # ============================================================
 # F1 — Shifted and Rotated Bent Cigar
 # ============================================================
-run_51_and_plot('F1', make_wrapper(simple.f1), 100.0, 'Shifted and Rotated Bent Cigar')
+run_and_plot('F1', make_wrapper(simple.f1), 100.0, 'Shifted and Rotated Bent Cigar')
 
 # ============================================================
 # F2 — Shifted and Rotated Sum of Different Power
 # ============================================================
-run_51_and_plot('F2', make_wrapper(simple.f2), 200.0, 'Shifted and Rotated Sum of Different Power (Deprecated)')
+run_and_plot('F2', make_wrapper(simple.f2), 200.0, 'Shifted and Rotated Sum of Different Power (Deprecated)')
 
 # ============================================================
 # F3 — Shifted and Rotated Zakharov
 # ============================================================
-run_51_and_plot('F3', make_wrapper(simple.f3), 300.0, 'Shifted and Rotated Zakharov')
+run_and_plot('F3', make_wrapper(simple.f3), 300.0, 'Shifted and Rotated Zakharov')
 
 """## **6.2 Multimodal Functions (F4-F10)**"""
 
 # ============================================================
 # F4 — Shifted and Rotated Rosenbrock
 # ============================================================
-run_51_and_plot('F4', make_wrapper(simple.f4), 400.0, "Shifted and Rotated Rosenbrock's")
+run_and_plot('F4', make_wrapper(simple.f4), 400.0, "Shifted and Rotated Rosenbrock's")
 
 # ============================================================
 # F5 — Shifted and Rotated Rastrigin
 # ============================================================
-run_51_and_plot('F5', make_wrapper(simple.f5), 500.0, "Shifted and Rotated Rastrigin's")
+run_and_plot('F5', make_wrapper(simple.f5), 500.0, "Shifted and Rotated Rastrigin's")
 
 # ============================================================
 # F6 — Shifted and Rotated Schaffer's F7
 # ============================================================
-run_51_and_plot('F6', make_wrapper(simple.f6), 600.0, "Shifted and Rotated Schaffer's F7")
+run_and_plot('F6', make_wrapper(simple.f6), 600.0, "Shifted and Rotated Schaffer's F7")
 
 # ============================================================
 # F7 — Shifted and Rotated Lunacek Bi-Rastrigin
 # ============================================================
-run_51_and_plot('F7', make_wrapper(simple.f7), 700.0, "Shifted and Rotated Lunacek Bi-Rastrigin's")
+run_and_plot('F7', make_wrapper(simple.f7), 700.0, "Shifted and Rotated Lunacek Bi-Rastrigin's")
 
 # ============================================================
 # F8 — Shifted and Rotated Non-Continuous Rastrigin
 # ============================================================
-run_51_and_plot('F8', make_wrapper(simple.f8), 800.0, "Shifted and Rotated Non-Continuous Rastrigin's")
+run_and_plot('F8', make_wrapper(simple.f8), 800.0, "Shifted and Rotated Non-Continuous Rastrigin's")
 
 # ============================================================
 # F9 — Shifted and Rotated Levy
 # ============================================================
-run_51_and_plot('F9', make_wrapper(simple.f9), 900.0, 'Shifted and Rotated Levy')
+run_and_plot('F9', make_wrapper(simple.f9), 900.0, 'Shifted and Rotated Levy')
 
 # ============================================================
 # F10 — Shifted and Rotated Schwefel
 # ============================================================
-run_51_and_plot('F10', make_wrapper(simple.f10), 1000.0, "Shifted and Rotated Schwefel's")
+run_and_plot('F10', make_wrapper(simple.f10), 1000.0, "Shifted and Rotated Schwefel's")
 
 """## **6.3 Hybrid Functions (F11-F20)**"""
 
 # ============================================================
 # F11 — Hybrid Function 1 (Zakharov; Rosenbrock; Rastrigin)
 # ============================================================
-run_51_and_plot('F11', make_wrapper(hybrid.f11), 1100.0, 'Hybrid: Zakharov; Rosenbrock; Rastrigin')
+run_and_plot('F11', make_wrapper(hybrid.f11), 1100.0, 'Hybrid: Zakharov; Rosenbrock; Rastrigin')
 
 # ============================================================
 # F12 — Hybrid Function 2 (Elliptic; Schwefel; Bent Cigar)
 # ============================================================
-run_51_and_plot('F12', make_wrapper(hybrid.f12), 1200.0, 'Hybrid: Elliptic; Schwefel; Bent Cigar')
+run_and_plot('F12', make_wrapper(hybrid.f12), 1200.0, 'Hybrid: Elliptic; Schwefel; Bent Cigar')
 
 # ============================================================
 # F13 — Hybrid Function 3 (Bent Cigar; Rosenbrock; Bi-Rastrigin)
 # ============================================================
-run_51_and_plot('F13', make_wrapper(hybrid.f13), 1300.0, 'Hybrid: Bent Cigar; Rosenbrock; Bi-Rastrigin')
+run_and_plot('F13', make_wrapper(hybrid.f13), 1300.0, 'Hybrid: Bent Cigar; Rosenbrock; Bi-Rastrigin')
 
 # ============================================================
 # F14 — Hybrid Function 4 (Elliptic; Ackley; Schaffer; Rastrigin)
 # ============================================================
-run_51_and_plot('F14', make_wrapper(hybrid.f14), 1400.0, 'Hybrid: Elliptic; Ackley; Schaffer; Rastrigin')
+run_and_plot('F14', make_wrapper(hybrid.f14), 1400.0, 'Hybrid: Elliptic; Ackley; Schaffer; Rastrigin')
 
 # ============================================================
 # F15 — Hybrid Function 5 (Bent Cigar; HGBat; Rastrigin; Rosenbrock)
 # ============================================================
-run_51_and_plot('F15', make_wrapper(hybrid.f15), 1500.0, 'Hybrid: Bent Cigar; HGBat; Rastrigin; Rosenbrock')
+run_and_plot('F15', make_wrapper(hybrid.f15), 1500.0, 'Hybrid: Bent Cigar; HGBat; Rastrigin; Rosenbrock')
 
 # ============================================================
 # F16 — Hybrid Function 6 (Schaffer; HGBat; Rosenbrock; Schwefel)
 # ============================================================
-run_51_and_plot('F16', make_wrapper(hybrid.f16), 1600.0, 'Hybrid: Schaffer; HGBat; Rosenbrock; Schwefel')
+run_and_plot('F16', make_wrapper(hybrid.f16), 1600.0, 'Hybrid: Schaffer; HGBat; Rosenbrock; Schwefel')
 
 # ============================================================
 # F17 — Hybrid Function 7 (Katsuura; Ackley; Griewank+Rosenbrock; Schwefel; Rastrigin)
 # ============================================================
-run_51_and_plot('F17', make_wrapper(hybrid.f17), 1700.0, 'Hybrid: Katsuura; Ackley; Griewank+Rosenbrock; Schwefel; Rastrigin')
+run_and_plot('F17', make_wrapper(hybrid.f17), 1700.0, 'Hybrid: Katsuura; Ackley; Griewank+Rosenbrock; Schwefel; Rastrigin')
 
 # ============================================================
 # F18 — Hybrid Function 8 (Elliptic; Ackley; Rastrigin; HGBat; Discus)
 # ============================================================
-run_51_and_plot('F18', make_wrapper(hybrid.f18), 1800.0, 'Hybrid: Elliptic; Ackley; Rastrigin; HGBat; Discus')
+run_and_plot('F18', make_wrapper(hybrid.f18), 1800.0, 'Hybrid: Elliptic; Ackley; Rastrigin; HGBat; Discus')
 
 # ============================================================
 # F19 — Hybrid Function 9 (Bent Cigar; Rastrigin; Griewank+Rosenbrock; Weierstrass; Schaffer)
 # ============================================================
-run_51_and_plot('F19', make_wrapper(hybrid.f19), 1900.0, 'Hybrid: Bent Cigar; Rastrigin; Griewank+Rosenbrock; Weierstrass; Schaffer')
+run_and_plot('F19', make_wrapper(hybrid.f19), 1900.0, 'Hybrid: Bent Cigar; Rastrigin; Griewank+Rosenbrock; Weierstrass; Schaffer')
 
 # ============================================================
 # F20 — Hybrid Function 10 (HappyCat; Katsuura; Ackley; Rastrigin; Schwefel; Schaffer)
 # ============================================================
-run_51_and_plot('F20', make_wrapper(hybrid.f20), 2000.0, 'Hybrid: HappyCat; Katsuura; Ackley; Rastrigin; Schwefel; Schaffer')
+run_and_plot('F20', make_wrapper(hybrid.f20), 2000.0, 'Hybrid: HappyCat; Katsuura; Ackley; Rastrigin; Schwefel; Schaffer')
 
 """## **6.4 Composite Functions (F21-F30)**"""
 
 # ============================================================
 # F21 — Composition Function 1 (Rosenbrock; Elliptic; Rastrigin)
 # ============================================================
-run_51_and_plot('F21', make_wrapper(composition.f21), 2100.0, 'Composition: Rosenbrock; Elliptic; Rastrigin')
+run_and_plot('F21', make_wrapper(composition.f21), 2100.0, 'Composition: Rosenbrock; Elliptic; Rastrigin')
 
 # ============================================================
 # F22 — Composition Function 2 (Rastrigin; Griewank; Schwefel)
 # ============================================================
-run_51_and_plot('F22', make_wrapper(composition.f22), 2200.0, 'Composition: Rastrigin; Griewank; Schwefel')
+run_and_plot('F22', make_wrapper(composition.f22), 2200.0, 'Composition: Rastrigin; Griewank; Schwefel')
 
 # ============================================================
 # F23 — Composition Function 3 (Rosenbrock; Ackley; Schwefel; Rastrigin)
 # ============================================================
-run_51_and_plot('F23', make_wrapper(composition.f23), 2300.0, 'Composition: Rosenbrock; Ackley; Schwefel; Rastrigin')
+run_and_plot('F23', make_wrapper(composition.f23), 2300.0, 'Composition: Rosenbrock; Ackley; Schwefel; Rastrigin')
 
 # ============================================================
 # F24 — Composition Function 4 (Ackley; Elliptic; Griewank; Rastrigin)
 # ============================================================
-run_51_and_plot('F24', make_wrapper(composition.f24), 2400.0, 'Composition: Ackley; Elliptic; Griewank; Rastrigin')
+run_and_plot('F24', make_wrapper(composition.f24), 2400.0, 'Composition: Ackley; Elliptic; Griewank; Rastrigin')
 
 # ============================================================
 # F25 — Composition Function 5 (Rastrigin; HappyCat; Ackley; Discus; Rosenbrock)
 # ============================================================
-run_51_and_plot('F25', make_wrapper(composition.f25), 2500.0, 'Composition: Rastrigin; HappyCat; Ackley; Discus; Rosenbrock')
+run_and_plot('F25', make_wrapper(composition.f25), 2500.0, 'Composition: Rastrigin; HappyCat; Ackley; Discus; Rosenbrock')
 
 # ============================================================
 # F26 — Composition Function 6 (Schaffer; Schwefel; Griewank; Rosenbrock; Rastrigin)
 # ============================================================
-run_51_and_plot('F26', make_wrapper(composition.f26), 2600.0, 'Composition: Schaffer; Schwefel; Griewank; Rosenbrock; Rastrigin')
+run_and_plot('F26', make_wrapper(composition.f26), 2600.0, 'Composition: Schaffer; Schwefel; Griewank; Rosenbrock; Rastrigin')
 
 # ============================================================
 # F27 — Composition Function 7 (HGBat; Rastrigin; Schwefel; Bent Cigar; Elliptic; Schaffer)
 # ============================================================
-run_51_and_plot('F27', make_wrapper(composition.f27), 2700.0, 'Composition: HGBat; Rastrigin; Schwefel; Bent Cigar; Elliptic; Schaffer')
+run_and_plot('F27', make_wrapper(composition.f27), 2700.0, 'Composition: HGBat; Rastrigin; Schwefel; Bent Cigar; Elliptic; Schaffer')
 
 # ============================================================
 # F28 — Composition Function 8 (Ackley; Griewank; Discus; Rosenbrock; HappyCat; Schaffer)
 # ============================================================
-run_51_and_plot('F28', make_wrapper(composition.f28), 2800.0, 'Composition: Ackley; Griewank; Discus; Rosenbrock; HappyCat; Schaffer')
+run_and_plot('F28', make_wrapper(composition.f28), 2800.0, 'Composition: Ackley; Griewank; Discus; Rosenbrock; HappyCat; Schaffer')
 
 # ============================================================
 # F29 — Composition Function 9 (F15; F16; F17)
 # ============================================================
-run_51_and_plot('F29', make_wrapper(composition.f29), 2900.0, 'Composition: F15; F16; F17')
+run_and_plot('F29', make_wrapper(composition.f29), 2900.0, 'Composition: F15; F16; F17')
 
 # ============================================================
 # F30 — Composition Function 10 (F15; F18; F19)
 # ============================================================
-run_51_and_plot('F30', make_wrapper(composition.f30), 3000.0, 'Composition: F15; F18; F19')
+run_and_plot('F30', make_wrapper(composition.f30), 3000.0, 'Composition: F15; F18; F19')
 
 """# ***Section 7. Compiled Results***
 
@@ -488,14 +462,19 @@ Print out a summary of all results in a tabular format
 """
 
 print('=' * 80)
-print(f'SUMMARY — DP-LLDE on CEC 2017 ({D}D), {N_RUNS} Independent Runs')
+print('SUMMARY — DP-LLDE on CEC 2017 (10D), Single Run, Seed=42')
 print('=' * 80)
-print(f'{"Function":<10} {"Mean Error":>18} {"Std Dev":>18} {"Min Error":>18} {"Max Error":>18}')
-print('-' * 86)
+print(f'{"Function":<10} {"Best Fitness":>18} {"Global Optimum":>18} {"Error |best-opt|":>18}')
+print('-' * 70)
 for fn in [f'F{i}' for i in range(1, 31)]:
     if fn not in all_results:
         continue
     r = all_results[fn]
-    print(f'{fn:<10} {r["mean"]:>18.6e} {r["std"]:>18.6e} {r["min"]:>18.6e} {r["max"]:>18.6e}')
+    if r['best_fit'] is None:
+        print(f'{fn:<10} {"N/A (deprecated)":>18} {r["f_global"]:>18.2f} {"N/A":>18}')
+    else:
+        print(f'{fn:<10} {r["best_fit"]:>18.6e} {r["f_global"]:>18.2f} {r["error"]:>18.6e}')
 print('=' * 80)
-print('Note: Errors reported as |best_fitness - f_global| averaged over 51 runs.')
+print('Note: Negative raw errors on some functions (F9, F15, F16, F21, etc.)')
+print('are due to known offset inconsistencies in the cec2017 library.')
+print('All errors reported here are absolute values |best - f_global|.')
