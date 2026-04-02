@@ -1,3 +1,19 @@
+<div align="center">
+
+# DP-LLDE on CEC 2017 Benchmark Functions
+### Mitigating Premature Convergence with Diversity-Preserving Level-Guided Differential Evolution with Adaptive Mutation
+
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![NumPy](https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white)
+![Matplotlib](https://img.shields.io/badge/Matplotlib-11557C?style=for-the-badge&logo=matplotlib&logoColor=white)
+![CEC2017](https://img.shields.io/badge/CEC2017-Duncan%20Tilley-4B8BBE?style=for-the-badge)
+![Google Colab](https://img.shields.io/badge/Google%20Colab-F9AB00?style=for-the-badge&logo=googlecolab&logoColor=black)
+![Differential Evolution](https://img.shields.io/badge/DP--LLDE-Custom%20Algorithm-6A0DAD?style=for-the-badge)
+
+</div>
+
+---
+
 # DP-LLDE: Diversity-Preserving Level-Guided Differential Evolution with Adaptive Mutation
 
 > A thesis project by Aaron Kent A. Celles, Lee Ryan A. Leviste, and Enrique S. Santeco  
