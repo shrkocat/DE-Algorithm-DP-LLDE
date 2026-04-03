@@ -148,7 +148,7 @@ Output: Optimal solution X and fitness f(X)
 
 - **Suite:** CEC 2017 Large-Scale Global Optimization (F1–F30)
 - **Dimensions:** D = 10, 30, 50, 100
-- **Metrics:** Average ± Std, Wilcoxon Rank-Sum Test (α = 0.05), Population Diversity Curves
+- **Metrics:** Population Diversity Curves, Error Values
 
 ---
 
