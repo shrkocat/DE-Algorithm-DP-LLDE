@@ -77,6 +77,10 @@ class LBLDE:
         self.best_solution = None
         self.best_fitness = np.inf
         self.fitness_history = []
+        self.diversity_history = []
+        
+        # State initialised during optimize()
+        self.D_0 = None  # Initial diversity for consistency with DP-LLDE
         
     def initialize_population(self) -> Tuple[np.ndarray, np.ndarray]:
         """Initialize random population within bounds"""
@@ -87,6 +91,15 @@ class LBLDE:
         )
         fitness = np.array([self.objective_func(ind) for ind in population])
         return population, fitness
+    
+    def compute_diversity(self, population: np.ndarray) -> float:
+        """
+        Fast approximation of mean pairwise distance using variance.
+        Returns the mean standard deviation across all dimensions.
+        """
+        if len(population) < 2:
+            return 0.0
+        return float(np.mean(np.std(population, axis=0)))
     
     def sort_population(self, population: np.ndarray, fitness: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """Sort population by fitness (ascending order)"""
@@ -217,7 +230,7 @@ class LBLDE:
             mean_L = np.sum(S_F_array ** 2) / np.sum(S_F_array)
             self.mu_F = (1 - self.c) * self.mu_F + self.c * mean_L
     
-    def optimize(self, verbose: bool = True) -> Tuple[np.ndarray, float, list]:
+    def optimize(self, verbose: bool = True) -> Tuple[np.ndarray, float, List[float], List[float]]:
         """
         Run LBLDE optimization
         
@@ -229,6 +242,8 @@ class LBLDE:
             Best fitness value
         fitness_history : list
             History of best fitness over generations
+        diversity_history : list
+            History of population diversity over generations
         """
         # Initialize
         FES = 0
@@ -244,8 +259,15 @@ class LBLDE:
         self.best_fitness = fitness[best_idx]
         self.fitness_history.append(self.best_fitness)
         
+        # Compute initial diversity
+        initial_diversity = self.compute_diversity(population)
+        self.D_0 = initial_diversity  # Store for consistency with DP-LLDE
+        self.diversity_history.append(initial_diversity)
+        
         if verbose:
-            print(f"Generation 0: Best Fitness = {self.best_fitness:.6e}")
+            print(f"Initial D^(0) = {self.D_0:.4e}")
+            print(f"Generation 0: Best Fitness = {self.best_fitness:.6e}  |  "
+                  f"Diversity = {initial_diversity:.4e}")
         
         # Main loop
         while FES < self.max_fes:
@@ -328,15 +350,20 @@ class LBLDE:
             
             self.fitness_history.append(self.best_fitness)
             
+            # Track diversity at end of each generation
+            current_diversity = self.compute_diversity(population)
+            self.diversity_history.append(current_diversity)
+            
             if verbose and G % 10 == 0:
-                print(f"Generation {G}: Best Fitness = {self.best_fitness:.6e}, FES = {FES}")
+                print(f"Generation {G:4d}: Best = {self.best_fitness:.6e}  "
+                      f"FES = {FES:6d}  Diversity = {current_diversity:.4e}")
         
         if verbose:
             print(f"\nOptimization completed!")
             print(f"Final Best Fitness = {self.best_fitness:.6e}")
             print(f"Total Function Evaluations = {FES}")
         
-        return self.best_solution, self.best_fitness, self.fitness_history
+        return self.best_solution, self.best_fitness, self.fitness_history, self.diversity_history
 
 
 # =============================================================================
@@ -402,7 +429,7 @@ def run_multiple_trials(
             seed=run  # Different seed for each run
         )
         
-        best_sol, best_fit, history = optimizer.optimize(verbose=False)
+        best_sol, best_fit, history, _ = optimizer.optimize(verbose=False)  # 4-tuple unpacking
         best_fitness_values.append(best_fit)
         all_histories.append(history)
     
@@ -502,7 +529,7 @@ if __name__ == "__main__":
             seed=42
         )
         
-        best_sol, best_fit, history = optimizer.optimize(verbose=False)
+        best_sol, best_fit, history, diversity_hist = optimizer.optimize(verbose=False)
         print(f"Best fitness: {best_fit:.6e}")
         
     print("\n" + "=" * 70)
