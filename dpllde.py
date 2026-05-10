@@ -332,15 +332,16 @@ class DPLLDE:
     # Main optimisation loop
     # =========================================================================
 
-    def optimize(self, verbose: bool = True) -> Tuple[np.ndarray, float, List[float]]:
+    def optimize(self, verbose: bool = True) -> Tuple[np.ndarray, float, List[float], List[float]]:
         """
         Run DP-LLDE.
 
         Returns
         -------
-        best_solution   : np.ndarray
-        best_fitness    : float
-        fitness_history : list  (one entry per generation)
+        best_solution      : np.ndarray
+        best_fitness       : float
+        fitness_history    : list  (one entry per generation)
+        diversity_history  : list  (one entry per generation)
         """
         FES = 0
         G   = 0
@@ -364,6 +365,7 @@ class DPLLDE:
         self.best_solution   = population[best_idx].copy()
         self.best_fitness    = float(fitness[best_idx])
         self.fitness_history = [self.best_fitness]
+        diversity_history    = [self.D_0]  # Track diversity per generation
 
         if verbose:
             print(f"Initial D^(0) = {self.D_0:.4e}  |  "
@@ -442,11 +444,16 @@ class DPLLDE:
                 self.best_solution = population[current_best_idx].copy()
 
             self.fitness_history.append(self.best_fitness)
+            
+            # Track diversity at end of each generation
+            current_diversity = self.compute_diversity(population)
+            diversity_history.append(current_diversity)
 
             if verbose and G % 10 == 0:
                 print(f"Generation {G:4d}: Best = {self.best_fitness:.6e}  "
                       f"FES = {FES:6d}  μ_F = {self.mu_F:.3f}  "
                       f"μ_CR = {self.mu_CR:.3f}  "
+                      f"Diversity = {current_diversity:.4e}  "
                       f"k_t = {self.k_t.tolist()}")
 
         if verbose:
@@ -455,7 +462,7 @@ class DPLLDE:
             print(f"Total Function Evals     = {FES}")
             print(f"Total Successful Updates = {self.S_count}")
 
-        return self.best_solution, self.best_fitness, self.fitness_history
+        return self.best_solution, self.best_fitness, self.fitness_history, diversity_history
 
 
 # =============================================================================
@@ -511,7 +518,7 @@ def run_multiple_trials(
             max_fes=max_fes,
             seed=run
         )
-        _, best_fit, history = opt.optimize(verbose=False)
+        _, best_fit, history, _ = opt.optimize(verbose=False)  # 4-tuple unpacking
         best_fitness_values.append(best_fit)
         all_histories.append(history)
 
@@ -593,7 +600,7 @@ if __name__ == "__main__":
             max_fes=10000 * D,
             seed=42
         )
-        _, best_fit, _ = opt.optimize(verbose=False)
+        _, best_fit, _, _ = opt.optimize(verbose=False)  # 4-tuple unpacking
         print(f"  {name:<12}: {best_fit:.6e}")
 
     print("=" * 70)
