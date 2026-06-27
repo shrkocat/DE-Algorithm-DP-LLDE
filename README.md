@@ -112,7 +112,7 @@ Output: Optimal solution X and fitness f(X)
 3.  FES = FES + NP
 4.  Compute initial diversity D^(0); initialize k_0[] per particle
 5.  while FES ≤ MaxFES do
-6.    G = G + 1
+6.    G = G + 1, k_t = max(1, k_0 - t)
 7.    Sort P by fitness; partition into NL equal levels
 8.    for i = 1 to NL do
 9.      if G == 1: k_0[i] = rand_int(2, NL)     ← random initial level (not elite)
@@ -125,7 +125,7 @@ Output: Optimal solution X and fitness f(X)
 16.       k = k_t[i]
 17.       Select 2 exemplars e1, e2 from level k
 18.       if ||e1 − e2|| < threshold: replace one with a more diverse candidate
-19.       V_ij = e1 + F_ij · (e2 − X_ij) · (NL − k) / NL   ← DP mutation
+19.       v_i = e_1 + F(x_pbest - x_i) + F(e_2 - x_i)((L-k)/(L))   ← DP mutation
 20.       Generate trial vector U_ij via binomial crossover
 21.       FES = FES + 1
 22.       if f(X_ij) ≤ f(U_ij): keep X_ij
