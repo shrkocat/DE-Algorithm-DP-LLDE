@@ -39,17 +39,22 @@ Standard DE and LBLDE suffer from **premature convergence** in high-dimensional 
 
 ## DP-LLDE Mutation Formula
 
-The core mutation rule of DP-LLDE is:
-
-$$v_i = e_1 + F \cdot (e_2 - x_i) \cdot \frac{L - k}{L}$$
+$$
+v_i = e_1 + F(x_{pbest} - x_i) + F(e_2 - x_i)\cdot\frac{L-k}{L}
+$$
 
 Where:
-- $e_1, e_2$ — two exemplars randomly selected from the **current learning level** $k$
-- $x_i$ — the target particle
-- $F$ — scaling factor controlling mutation strength
-- $L$ — total number of levels
-- $k$ — the level the particle is currently learning from
-- $\frac{L-k}{L}$ — normalization factor that **decays mutation pressure** as the particle ascends toward elite levels
+
+- **$e_1$** – Base exemplar selected from a higher population level; serves as the mutation starting point.
+- **$F$** – Differential Evolution scaling factor that controls the influence of the mutation components.
+- **$(x_{pbest} - x_i)$** – Guides the current individual $x_i$ toward the best-performing solution $x_{pbest}$, accelerating convergence toward promising regions.
+- **$(e_2 - x_i)$** – Adds learning from a second higher-level exemplar $e_2$, improving search diversity and solution quality.
+- **$\frac{L-k}{L}$** – Normalized level factor that controls mutation intensity. Lower-level individuals receive stronger mutations, while higher-level individuals receive progressively smaller updates to balance exploration and exploitation.
+- **$x_i$** – Current target individual.
+- **$x_{pbest}$** – Best-performing individual selected from the elite population.
+- **$e_2$** – Second exemplar selected from a higher population level.
+- **$L$** – Total number of population levels.
+- **$k$** – Current learning level of the individual.
 
 **Sequential Level Assignment** ensures no particle starts at the elite level:
 
@@ -57,7 +62,7 @@ $$k_0 \sim \{2, 3, \ldots, L\}$$
 
 And level advancement follows a strict upward rule per generation $t$:
 
-$$k_t = k_0 + t, \quad \text{stops when } k_t > L$$
+$$k_t = \max(1,\ k_0 - t), \quad \text{stops when } k_t > L$$
 
 This guarantees that particles explore intermediate fitness regions before converging toward elite solutions, preserving population diversity in early-to-mid optimization stages.
 
