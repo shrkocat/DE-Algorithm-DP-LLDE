@@ -143,8 +143,7 @@ Output: Optimal solution X and fitness f(X)
 |---|---|---|
 | Exemplar source | Always from elite level | Sequential level traversal |
 | Mutation scaling | Fixed | Normalized by level: `(L−k)/L` |
-| Diversity check | None | Euclidean distance threshold |
-| Initial level | Directly at elite | Random non-elite level |
+| Initial level learning | Directly at elite | Random non-elite level |
 | Premature convergence risk | Higher | Mitigated |
 
 ---
